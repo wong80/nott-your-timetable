@@ -16,6 +16,7 @@ permissions:
 jobs:
   windows:
     strategy:
+      fail-fast: false
       matrix:
         spec-file: [nott-your-timetable.spec, nott-your-timetable-folder.spec]
         include:
@@ -42,20 +43,28 @@ jobs:
           install: >-
             zip
             mingw-w64-x86_64-gtk4
-            mingw-w64-x86_64-python3-gobject
-            mingw-w64-x86_64-python3-pip
-          
-      - uses: actions/checkout@v3
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-python-gobject
+
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.version }}
-         
+
+      # MSYS2's Python is externally managed, so install into a venv that
+      # still sees its PyGObject
       - name: Installing nott-your-timetable and pyinstaller
         run: |
-          python -m pip install -e .
-          python -m pip install pyinstaller
-      
+          python -m venv --system-site-packages .venv
+          .venv/bin/python -m pip install -e . pyinstaller
+
+      - name: Checking GTK is available
+        run: >-
+          .venv/bin/python -c "import gi; gi.require_version('Gtk', '4.0');
+          from gi.repository import Gtk; print('Gtk', Gtk.get_major_version(),
+          Gtk.get_minor_version())"
+
       - name: Compiling Executable
-        run: pyinstaller ${{ matrix.spec-file }}
+        run: .venv/bin/python -m PyInstaller ${{ matrix.spec-file }}
 
       - name: Zipping Folder
         if: (matrix.spec-file == 'nott-your-timetable-folder.spec')
@@ -64,7 +73,7 @@ jobs:
           zip -r nott-your-timetable.zip nott-your-timetable
           
       - name: Uploading Executable
-        run: gh release upload ${{ env.version }} dist/nott-your-timetable${{ matrix.extension }}
+        run: gh release upload --clobber ${{ env.version }} dist/nott-your-timetable${{ matrix.extension }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
@@ -73,6 +82,7 @@ jobs:
     runs-on: macos-latest
     
     strategy:
+      fail-fast: false
       matrix:
         spec-file: [nott-your-timetable.spec, nott-your-timetable-folder.spec]
         include:
@@ -83,25 +93,30 @@ jobs:
       version: ${{ inputs.version || github.event.release.tag_name }}
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.version }}
-          
+
       - name: Installing System Dependencies
         run: brew install pygobject3 gtk4
-        
-      - name: Set up Python "3.10"
-        uses: actions/setup-python@v4
-        with:
-         python-version: "3.10"
-         
+
+      # PyGObject is only installed for Homebrew's Python, so build with that
+      # Python in a venv that can still see it
       - name: Installing nott-your-timetable and pyinstaller
         run: |
-          python -m pip install -e .
-          python -m pip install pyinstaller
-        
+          PYTHON_FORMULA=$(brew deps pygobject3 | grep -m1 '^python@')
+          "$(brew --prefix "$PYTHON_FORMULA")/bin/python3" -m venv \
+            --system-site-packages .venv
+          .venv/bin/python -m pip install -e . pyinstaller
+
+      - name: Checking GTK is available
+        run: >-
+          .venv/bin/python -c "import gi; gi.require_version('Gtk', '4.0');
+          from gi.repository import Gtk; print('Gtk', Gtk.get_major_version(),
+          Gtk.get_minor_version())"
+
       - name: Compiling Executable
-        run: pyinstaller ${{ matrix.spec-file }}
+        run: .venv/bin/python -m PyInstaller ${{ matrix.spec-file }}
         
       # - name: Setup Node
       #  uses: actions/setup-node@v3
@@ -129,6 +144,6 @@ jobs:
       #    create-dmg 'nott-your-timetable.app' --dmg-title='nott-your-timetable-${{ matrix.name }}' --identity='io.github.nott-your-timetable'
           
       - name: Uploading Executable
-        run: gh release upload ${{ env.version }} dist/nott-your-timetable-macos${{ matrix.name }}.zip
+        run: gh release upload --clobber ${{ env.version }} dist/nott-your-timetable-macos${{ matrix.name }}.zip
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
