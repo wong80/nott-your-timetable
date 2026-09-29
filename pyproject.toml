@@ -16,6 +16,9 @@ dynamic = ["version"]
 authors = [
     { name = "ecyht2", email = "ecyht2@nottingham.edu.my" }
 ]
+maintainers = [
+    { name = "Zhi Yuan Wong" }
+]
 
 [project.scripts]
 "nott-your-timetable-cli" = "nott_your_timetable.nott_your_timetable:main_cli"
@@ -27,7 +30,8 @@ gui = ["PyGObject"]
 "nott-your-timetable" = "nott_your_timetable.nott_your_timetable:main"
 
 [project.urls]
-"Homepage" = "https://github.com/ecyht2/nott-your-timetable"
+"Homepage" = "https://github.com/wong80/nott-your-timetable"
+"Original Project" = "https://github.com/ecyht2/nott-your-timetable"
 
 [tool.setuptools.dynamic]
 version = { attr = "nott_your_timetable.__version__" }
