@@ -10,13 +10,18 @@ from html.parser import HTMLParser
 from collections import defaultdict
 from collections.abc import Iterable
 from typing import Any, NoReturn
+from zoneinfo import ZoneInfo
 import requests
 from icalendar import Calendar as iCalendar
 from icalendar import Event as iEvent
 from .data import get_data
 from .enums import DayOfWeekISO, DayOfWeek
-from .weeks import find_week1
+from .weeks import find_week1, parse_week1, find_current_week_nott
 from .range_handlers import handle_ranges
+
+# All UNM timetable times are local to the campus
+TIMEZONE = ZoneInfo("Asia/Kuala_Lumpur")
+BASE_URL = "http://timetablingunmc.nottingham.ac.uk:8006"
 
 
 # Other Utils
@@ -41,7 +46,7 @@ def get_program_value(school: str, program: str) -> str:
     if school_value is None:
         raise ValueError("Invalid School Name")
 
-    program_value = program_data[school_value].get(program)
+    program_value = program_data.get(school_value, {}).get(program)
     if program_value is None:
         raise ValueError("Invalid Program")
 
@@ -189,7 +194,8 @@ def table_to_dict(table: str | ET.Element, indexs: list[str] = None,
     return output
 
 
-def parse_data(data: dict, weeks: list) -> dict:
+def parse_data(data: dict, weeks: list,
+               week1: datetime.date | None = None) -> dict:
     """Combines all the parts of the tables into it's own list.
 
     Parameter
@@ -198,13 +204,16 @@ def parse_data(data: dict, weeks: list) -> dict:
         The data
     weeks: list
         The weeks to parse
+    week1: datetime.date | None
+        The start date of week 1, defaults to ``find_week1()``
 
     Return
     ------
     dict
         The parsed data
     """
-    start_day = find_week1()
+    if week1 is None:
+        week1 = find_week1()
 
     output_data = {
         "Module": [],
@@ -216,7 +225,7 @@ def parse_data(data: dict, weeks: list) -> dict:
 
     # Looping Over all they day of the week
     for day, day_data in data.items():
-        date_with_day = start_day +\
+        date_with_day = week1 +\
             datetime.timedelta(days=DayOfWeek[day].value)
         # Skipping if there is no classes
         if day_data is None:
@@ -258,6 +267,8 @@ class ScheduleData(defaultdict):
     """Object that holds all the data of a Schedule."""
     def __init__(self):
         super().__init__(list)
+        # Start of week 1 the dates were calculated from
+        self.week1: datetime.date | None = None
         key_list = ["Subject", "Start Date", "Start Time", "End Date",
                     "End Time", "All Day Event", "Description", "Location"]
 
@@ -349,14 +360,16 @@ class ScheduleData(defaultdict):
             else:
                 dtstart = datetime.datetime.combine(
                     self._get_value("Start Date", i),
-                    self._get_value("Start Time", i)
+                    self._get_value("Start Time", i),
+                    tzinfo=TIMEZONE
                 )
                 dtend = datetime.datetime.combine(
                     self._get_value("Start Date", i),
-                    self._get_value("End Time", i)
+                    self._get_value("End Time", i),
+                    tzinfo=TIMEZONE
                 )
 
-            event.add("dtstamp", datetime.datetime.now())
+            event.add("dtstamp", datetime.datetime.now(datetime.timezone.utc))
             event.add("uid", self.__get_uid(i))
             event.add("dtstart", dtstart)
             event.add("dtend", dtend)
@@ -364,6 +377,9 @@ class ScheduleData(defaultdict):
             event.add("location", self._get_value("Location", i))
 
             cal.add_component(event)
+
+        # Embed VTIMEZONE definitions so clients don't have to guess the TZID
+        cal.add_missing_timezones()
 
         self._write_file(cal.to_ical().decode("utf-8"), output)
 
@@ -427,7 +443,9 @@ class ScheduleData(defaultdict):
         if output is None:
             print(data)
         else:
-            with open(output, "w", encoding="utf-8") as file:
+            # Data already has CRLF line endings (RFC 4180/5545), don't let
+            # Windows translate them into CRCRLF
+            with open(output, "w", encoding="utf-8", newline="") as file:
                 file.write(data)
                 print(f"Data Exported to {output}")
 
@@ -553,8 +571,38 @@ class ScheduleData(defaultdict):
 
 
 # Requester
+def fetch_timetable(program_value: str) -> str:
+    """Fetches the raw HTML timetable report of a program for the whole year.
+
+    Parameters
+    ----------
+    program_value: str
+        The program value of the program to request
+
+    Returns
+    -------
+    str
+        The HTML report
+
+    Raises
+    ------
+    requests.RequestException
+        If the request fails or the server rejects the program value
+    """
+    link = f"{BASE_URL}/reporting/\
+TextSpreadsheet;programme+of+study;id;{program_value}%0D%0A?\
+days=1-7&weeks=1-52&periods=3-20&template=SWSCUST+programme+of+study+TextSpreadsheet&\
+height=100&week=100"
+
+    response: requests.Response = requests.get(link, timeout=10)
+    # e.g. 400 "Cannot Find Programme of Study" when program data is stale
+    response.raise_for_status()
+    return response.text
+
+
 def make_request(program_value: str, days: list[int],
-                 weeks: list[int]) -> ScheduleData:
+                 weeks: list[int] | None,
+                 week1: datetime.date | None = None) -> ScheduleData:
     """Make the http request to retrieve data.
 
     Prameters
@@ -563,27 +611,22 @@ def make_request(program_value: str, days: list[int],
         The program value of the program to request
     days: list[int]
         A list of day of week to request
-    weeks: list[int]
-        A list of weeks to request
+    weeks: list[int] | None
+        A list of weeks to request, None for the current week
+    week1: datetime.date | None
+        Overrides the start date of week 1
 
     Returns
     -------
     ScheduleData
         The data fetch
     """
-    link = f"http://timetablingunmc.nottingham.ac.uk:8006/reporting/\
-TextSpreadsheet;programme+of+study;id;{program_value}%0D%0A?\
-days=1-7&weeks=1-52&periods=3-20&template=SWSCUST+programme+of+study+TextSpreadsheet&\
-height=100&week=100"
-
-    response: requests.Response = requests.get(link, timeout=10)
-    text = response.text
-
-    return parse_response(text, days, weeks)
+    return parse_response(fetch_timetable(program_value), days, weeks, week1)
 
 
 def parse_response(response: str, days: list[int],
-                   weeks: list[int]) -> ScheduleData:
+                   weeks: list[int] | None,
+                   week1: datetime.date | None = None) -> ScheduleData:
     """Parses the HTML response into a ScheduleData Object.
 
     Parameters
@@ -592,24 +635,34 @@ def parse_response(response: str, days: list[int],
         The Response of the HTTP request
     days: list[int]
         A list of day of week to request
-    weeks: list[int]
-        A list of weeks to request
+    weeks: list[int] | None
+        A list of weeks to request, None for the current week
+    week1: datetime.date | None
+        The start date of week 1. Defaults to the date in the report header,
+        falling back to ``find_week1()``
 
     Returns
     -------
     ScheduleData
         The data object
     """
+    if week1 is None:
+        week1 = parse_week1(response) or find_week1()
+    if weeks is None:
+        weeks = [find_current_week_nott(week1)]
+
     parser = ScheduleParser(days)
     parser.feed(response)
     parser.close()
 
     data = parser.tables.copy()
     for key, value in parser.tables.items():
-        data[key] = table_to_dict(value, verbose=False)
+        # Days without a table (e.g. error pages) have no classes
+        data[key] = table_to_dict(value, verbose=False) if value else None
 
-    parsed_data = parse_data(data, weeks)
+    parsed_data = parse_data(data, weeks, week1)
     schedule_data = ScheduleData()
+    schedule_data.week1 = week1
     schedule_data.set("Subject", parsed_data["Module"])
     schedule_data.set("Start Date", parsed_data["Date"])
     schedule_data.set("Start Time", parsed_data["Start"])

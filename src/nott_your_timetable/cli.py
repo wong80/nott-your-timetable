@@ -1,12 +1,38 @@
 #!/usr/bin/env python3
 """CLI related functions."""
 import argparse
-from .utils.weeks import find_current_week_nott
+import datetime
+import os
 from .utils.data import get_data
 from .__init__ import __version__
 
+# Placeholder for --this-week, resolved once week 1 is known
+THIS_WEEK = "this"
 
-def parse_arguments():
+
+def output_filename(output: str | None, export_format: str) -> str | None:
+    """Appends the format extension to the output name if it's missing.
+
+    Parameters
+    ----------
+    output: str | None
+        The output name given by the user, None for stdout
+    export_format: str
+        The export format e.g. ics
+
+    Returns
+    -------
+    str | None
+        The output filename
+    """
+    if output is None:
+        return None
+    if os.path.splitext(output)[1].lower() == f".{export_format}":
+        return output
+    return f"{output}.{export_format}"
+
+
+def parse_arguments(argv: list[str] | None = None):
     """Parses the cli arguments for nott-your-timetable-cli."""
     parser = argparse.ArgumentParser(description='Exports Timetable for\
     University of Nottingham Malaysia Student.')
@@ -42,7 +68,11 @@ def parse_arguments():
                             const="4-15,22-33", dest="weeks")
     range_week.add_argument("-tw", "--this-week", action="store_const",
                             help="""Exports Timetable for this week.""",
-                            const=str(find_current_week_nott()), dest="weeks")
+                            const=THIS_WEEK, dest="weeks")
+    parser.add_argument("--week1", type=datetime.date.fromisoformat,
+                        default=None, metavar="YYYY-MM-DD",
+                        help="""Overrides the start date (Monday) of week 1.
+                        By default it is read from the timetable.""")
 
     # Range Options for days
     day_range_group = parser.add_argument_group(title="Day Range Options")
@@ -86,7 +116,7 @@ def parse_arguments():
     parser.add_argument('-v', '--version', action="version",
                         version=f"%(prog)s {__version__}")
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def get_school_interactive() -> tuple[str, list[str]]:
@@ -95,6 +125,9 @@ def get_school_interactive() -> tuple[str, list[str]]:
     program = None
 
     dept_data, program_data = get_data()
+    # Only offer schools/divisions that have programs
+    dept_data = {name: value for name, value in dept_data.items()
+                 if program_data.get(value)}
 
     while school is None or school == "?" or school == "":
         school = input("Enter School/Division Name (? for list): ")
