@@ -21,6 +21,7 @@ Exports Timetable for University of Nottingham Malaysia Student.
             - [Google Calendar](#google-calendar)
         - [CLI](#cli)
     - [Development](#development)
+        - [Updating School/Division and Program Data](#updating-schooldivision-and-program-data)
     - [TODO](#todo)
 
 <!-- markdown-toc end -->
@@ -168,6 +169,16 @@ pip install -e ".[test]"
 pytest
 ```
 
+### Updating School/Division and Program Data
+
+The list of schools/divisions and programs (`src/nott_your_timetable/data/*.json`) is generated from the timetable server's `js/filter.js`. A scheduled GitHub Action refreshes it weekly and opens a pull request when it changes. To refresh it manually:
+
+```sh
+python -m nott_your_timetable.utils.update_data --output-dir src/nott_your_timetable/data
+```
+
+Programs that share the same name (e.g. different intakes) have their ID appended, e.g. `Foundation Programme/F/00 - ... [FND/M1305/M5UFDNSAPR/F/00]`. In the CLI, a program can also be selected by its ID alone.
+
 ## TODO
   * [ ] Support for exporting to other formats
     * [x] CSV
@@ -179,6 +190,7 @@ pytest
   * [ ] Add GUI and TUI for displaying timetable
   * [x] Make use of [Calender Object](https://docs.python.org/3/library/calendar.html)
   * [x] Tests
+  * [x] Automatically update School/Division and Program data
   * [ ] Add Export Options
   * [x] Add better help descriptions
   * [ ] Support for mutiple program selection

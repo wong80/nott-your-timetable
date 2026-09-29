@@ -7,7 +7,7 @@ from .utils.range_handlers import handle_ranges_days, handle_ranges
 from .utils.weeks import find_current_week_nott, find_week1, parse_week1, \
     academic_year_notice
 from .utils.parsers import get_program_value, fetch_timetable, \
-    parse_response
+    parse_response, AmbiguousProgramError
 from .cli import get_school_interactive, parse_arguments, output_filename, \
     THIS_WEEK
 
@@ -89,8 +89,12 @@ def main_cli(argv: list[str] | None = None):
     # Getting the pogram values
     try:
         program_value = get_program_value(school, program)
-    except ValueError:
-        print("Invalid School or Program", file=sys.stderr)
+    except ValueError as err:
+        if isinstance(err, AmbiguousProgramError):
+            print(f"Several programs are named \"{program}\", did you mean "
+                  "one of:", *err.candidates, sep="\n  ", file=sys.stderr)
+        else:
+            print("Invalid School or Program", file=sys.stderr)
         return 1
 
     response = _fetch_timetable_cli(program_value)

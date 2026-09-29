@@ -6,7 +6,9 @@ import requests
 from nott_your_timetable import nott_your_timetable as app
 from nott_your_timetable.cli import output_filename, parse_arguments, \
     THIS_WEEK
-from nott_your_timetable.utils.parsers import get_program_value
+from nott_your_timetable.utils.data import get_data
+from nott_your_timetable.utils.parsers import get_program_value, \
+    AmbiguousProgramError
 from nott_your_timetable.utils.range_handlers import handle_ranges, \
     handle_ranges_days
 
@@ -96,6 +98,41 @@ def test_this_week_is_deferred():
 def test_get_program_value_invalid(school, program):
     with pytest.raises(ValueError):
         get_program_value(school, program)
+
+
+FOUNDATION = "Foundation Programme/F/00 - Foundation Foundation Programme"
+
+
+@pytest.mark.parametrize("program, expected", [
+    ("BEng Hons Electl & Electnc Eng/F/02 - H603 Electrical and Electronic "
+     "Engineering", "UG/M1024/M6UEEENG/F/02"),
+    ("UG/M1024/M6UEEENG/F/02", "UG/M1024/M6UEEENG/F/02"),   # Raw id
+])
+def test_get_program_value(program, expected):
+    assert get_program_value("E & EE", program) == expected
+
+
+def test_get_program_value_duplicate_names():
+    school = next(name for name, value in get_data()[0].items()
+                  if value == "MSC-FNDS")
+    assert get_program_value(
+        school, f"{FOUNDATION} [FND/M1305/M5UFDNSAPR/F/00]"
+    ) == "FND/M1305/M5UFDNSAPR/F/00"
+
+    with pytest.raises(AmbiguousProgramError) as err:
+        get_program_value(school, FOUNDATION)
+    assert sorted(err.value.candidates) == [
+        f"{FOUNDATION} [FND/M1305/M5UFDNSAPR/F/00]",
+        f"{FOUNDATION} [FND/M1306/M5UFDNSSEP/F/00]",
+    ]
+
+
+def test_main_cli_ambiguous_program(fake_fetch, capsys):
+    school = next(name for name, value in get_data()[0].items()
+                  if value == "MSC-FNDS")
+    assert app.main_cli(["-c", school, FOUNDATION]) == 1
+    assert not fake_fetch
+    assert "FND/M1306/M5UFDNSSEP/F/00" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("value, expected", [
