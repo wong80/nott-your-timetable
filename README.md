@@ -1,6 +1,8 @@
 # Nott Your Timetable
 Exports Timetable for University of Nottingham Malaysia Student.
 
+> **Note:** This is a maintained fork of [ecyht2/nott-your-timetable](https://github.com/ecyht2/nott-your-timetable), which is no longer updated. All credit for the original project goes to ecyht2. Changes are licensed under the same [GPL-3.0](LICENSE) license.
+
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
@@ -26,7 +28,7 @@ Exports Timetable for University of Nottingham Malaysia Student.
 
 ### Windows Folder (Recommended)
 
-1. Download the latest version of nott-your-timetable.zip [here](https://github.com/ecyht2/nott-your-timetable/releases/latest "Download Link").
+1. Download the latest version of nott-your-timetable.zip [here](https://github.com/wong80/nott-your-timetable/releases/latest "Download Link").
 2. Extract the .zip file.
 3. Run the .exe file inside the extracted folder.
 
@@ -34,14 +36,14 @@ Exports Timetable for University of Nottingham Malaysia Student.
 
 **Note:** Both folder and single exe file has the same features. However, the single exe file might take a longer time to start.
 
-1. Download the latest version of nott-your-timetable.exe [here](https://github.com/ecyht2/nott-your-timetable/releases/latest "Download Link").
+1. Download the latest version of nott-your-timetable.exe [here](https://github.com/wong80/nott-your-timetable/releases/latest "Download Link").
 2. Run the .exe file.
 
 ### MacOS
 
 **Note:** Both versions have the same features, but the first one might take a longer time to start.
 
-1. Download the latest version of nott-your-timetable-macos.zip or nott-your-timetable-macos-folder.zip (recommended) [here](https://github.com/ecyht2/nott-your-timetable/releases/latest "Download Link").
+1. Download the latest version of nott-your-timetable-macos.zip or nott-your-timetable-macos-folder.zip (recommended) [here](https://github.com/wong80/nott-your-timetable/releases/latest "Download Link").
 2. Extract the .zip file.
 3. Move the extracted .app file into `Applications` folder (optional).
 4. Run the .app file.
@@ -54,8 +56,10 @@ Exports Timetable for University of Nottingham Malaysia Student.
 
 #### Installation
 
+This fork isn't published on PyPI (the `nott-your-timetable` package there is the original, unmaintained version). Install it from GitHub instead:
+
 ``` sh
-pip install nott-your-timetable
+pip install "nott-your-timetable @ git+https://github.com/wong80/nott-your-timetable"
 ```
 
 For GUI support:
@@ -63,39 +67,39 @@ For GUI support:
 **Note:** there might be some error isntalling PyGObject using pip, follow the instruction [here](https://pygobject.readthedocs.io/en/latest/getting_started.html "PyGObject download") to download gtk. When following the instructions replace all refrences to **gtk3** with **gtk4** as nott-your-timetable uses **gtk4** and not **gtk3** e.g. `mingw-w64-x86_64-gtk3` -> `mingw-w64-x86_64-gtk4`.
 
 ``` sh
-pip install nott-your-timetable[gui]
+pip install "nott-your-timetable[gui] @ git+https://github.com/wong80/nott-your-timetable"
 ```
 
 ## Usage
 
 ### GUI
 1. Select School/Division
-![School/Division Selection](https://raw.githubusercontent.com/ecyht2/nott-your-timetable/master/media/school.jpg)
+![School/Division Selection](https://raw.githubusercontent.com/wong80/nott-your-timetable/master/media/school.jpg)
 2. Select Program
-![Program Selection](https://raw.githubusercontent.com/ecyht2/nott-your-timetable/master/media/program.jpg)
+![Program Selection](https://raw.githubusercontent.com/wong80/nott-your-timetable/master/media/program.jpg)
 3. Select week period
-![Weeks Selection](https://raw.githubusercontent.com/ecyht2/nott-your-timetable/master/media/weeks.jpg)
+![Weeks Selection](https://raw.githubusercontent.com/wong80/nott-your-timetable/master/media/weeks.jpg)
 4. Select day period
-![Days Selection](https://raw.githubusercontent.com/ecyht2/nott-your-timetable/master/media/days.jpg)
+![Days Selection](https://raw.githubusercontent.com/wong80/nott-your-timetable/master/media/days.jpg)
 5. Select export file format and hit continue. If you are confused just choose **ics**.
-![Export Format Selection](https://raw.githubusercontent.com/ecyht2/nott-your-timetable/master/media/format.jpg)
+![Export Format Selection](https://raw.githubusercontent.com/wong80/nott-your-timetable/master/media/format.jpg)
 6. Select location to save.
-![Save Location Selection](https://raw.githubusercontent.com/ecyht2/nott-your-timetable/master/media/save.jpg)
+![Save Location Selection](https://raw.githubusercontent.com/wong80/nott-your-timetable/master/media/save.jpg)
 
 ### Importing Timetable
 
 #### Outlook
 
 1. Open Outlook and go to the calendar section.
-![Outlook Calendar](https://raw.githubusercontent.com/ecyht2/nott-your-timetable/master/media/outlook.jpg)
+![Outlook Calendar](https://raw.githubusercontent.com/wong80/nott-your-timetable/master/media/outlook.jpg)
 2. Click on add calendar.
-![Adding Calendar](https://raw.githubusercontent.com/ecyht2/nott-your-timetable/master/media/add-calendar.jpg)
+![Adding Calendar](https://raw.githubusercontent.com/wong80/nott-your-timetable/master/media/add-calendar.jpg)
 3. Click on upload from file.
-![Upload from file](https://raw.githubusercontent.com/ecyht2/nott-your-timetable/master/media/upload.jpg)
+![Upload from file](https://raw.githubusercontent.com/wong80/nott-your-timetable/master/media/upload.jpg)
 4. Select file and calendar to import to.
-![Uploading Calendar](https://raw.githubusercontent.com/ecyht2/nott-your-timetable/master/media/select.jpg)
+![Uploading Calendar](https://raw.githubusercontent.com/wong80/nott-your-timetable/master/media/select.jpg)
 5. Done :)
-![Imported Calendar](https://raw.githubusercontent.com/ecyht2/nott-your-timetable/master/media/done.jpg)
+![Imported Calendar](https://raw.githubusercontent.com/wong80/nott-your-timetable/master/media/done.jpg)
 
 #### Google Calendar
 
