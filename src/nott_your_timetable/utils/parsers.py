@@ -25,32 +25,67 @@ BASE_URL = "http://timetablingunmc.nottingham.ac.uk:8006"
 
 
 # Other Utils
+class AmbiguousProgramError(ValueError):
+    """Raised when a program name matches several programs.
+
+    Parameters
+    ----------
+    candidates: list[str]
+        The full names of the matching programs
+    """
+    def __init__(self, candidates: list[str]):
+        super().__init__("Ambiguous Program")
+        self.candidates = candidates
+
+
 def get_program_value(school: str, program: str) -> str:
     """Gets the value of the program.
+
+    Programs sharing a name (e.g. different intakes) are listed as
+    ``"<name> [<id>]"``. They can be selected by that full name, by the id
+    itself, or by the plain name if only one program has it.
 
     Parameters
     ----------
     school: str
         The school of the program.
     program: str
-        The program to find the value of.
+        The program name or id to find the value of.
 
     Returns
     -------
     str
         The value of the program
+
+    Raises
+    ------
+    AmbiguousProgramError
+        If the plain name matches several programs
+    ValueError
+        If the school or program is invalid
     """
     dept_data, program_data = get_data()
 
     school_value = dept_data.get(school)
     if school_value is None:
         raise ValueError("Invalid School Name")
+    programs: dict[str, str] = program_data.get(school_value, {})
 
-    program_value = program_data.get(school_value, {}).get(program)
-    if program_value is None:
-        raise ValueError("Invalid Program")
+    # Exact name, or the program id itself
+    if program in programs:
+        return programs[program]
+    if program in programs.values():
+        return program
 
-    return program_value
+    # Plain name of a program listed as "<name> [<id>]"
+    candidates = [name for name, value in programs.items()
+                  if name == f"{program} [{value}]"]
+    if len(candidates) > 1:
+        raise AmbiguousProgramError(candidates)
+    if candidates:
+        return programs[candidates[0]]
+
+    raise ValueError("Invalid Program")
 
 
 # Utils for parsing data
