@@ -11,6 +11,7 @@ from .utils.data import get_data, get_convinience_weeks,\
 from .utils.range_handlers import handle_ranges_days   # noqa: E402
 from .utils.parsers import get_program_value, ScheduleData,\
     make_request   # noqa: E402
+from .utils.weeks import academic_year_notice   # noqa: E402
 # pylint: enable=wrong-import-position
 
 
@@ -212,6 +213,11 @@ class NottWindow(Gtk.ApplicationWindow):
             label="Timetable successfully exported.",
         ), 0, 0, 2, 1)
 
+        # Warning e.g. when the timetable is for a past academic year
+        self.notice_label = Gtk.Label(wrap=True, max_width_chars=60,
+                                      visible=False)
+        layout.attach(self.notice_label, 0, 1, 2, 1)
+
         # Setting up buttons
         exit_button = Gtk.Button(label="Exit")
         exit_button.connect("clicked", lambda b: self.destroy())
@@ -221,8 +227,8 @@ class NottWindow(Gtk.ApplicationWindow):
         ))
 
         # Attaching buttons
-        layout.attach(exit_button, 0, 1, 1, 1)
-        layout.attach(show_dialog, 1, 1, 1, 1)
+        layout.attach(exit_button, 0, 2, 1, 1)
+        layout.attach(show_dialog, 1, 2, 1, 1)
 
         # Adding to main layout
         self.main_layout.add_named(layout, "Success")
@@ -372,6 +378,10 @@ options
         # Checking Validity of week and day ranges
         for i in ["weeks", "days"]:
             data: str = self.export_options.get(i)
+            if i == "weeks" and data == "This Week":
+                # Resolved once week 1 is read from the timetable
+                self.export_options[i] = None
+                continue
             try:
                 # Checking if it is a convinience day range
                 if data not in convinience.get(i):
@@ -497,6 +507,12 @@ options
             # Error
             self.main_layout.set_visible_child_name("Error")
         else:
+            # Warning if the timetable isn't for the current academic year
+            week1 = getattr(schedule_data, "week1", None)
+            notice = academic_year_notice(week1) if week1 else None
+            self.notice_label.set_text(notice or "")
+            self.notice_label.set_visible(notice is not None)
+
             # Switching to success page
             self.main_layout.set_visible_child_name("Success")
 

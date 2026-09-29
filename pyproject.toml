@@ -10,7 +10,9 @@ license = { text = "GPL-3.0 license" }
 requires-python = ">=3.10"
 dependencies = [
     "requests",
-    "icalendar"
+    "icalendar>=6.1",
+    # IANA timezone database for zoneinfo on platforms without one (Windows)
+    "tzdata"
 ]
 dynamic = ["version"]
 authors = [
@@ -25,6 +27,7 @@ maintainers = [
 
 [project.optional-dependencies]
 gui = ["PyGObject"]
+test = ["pytest"]
 
 [project.gui-scripts]
 "nott-your-timetable" = "nott_your_timetable.nott_your_timetable:main"
@@ -38,3 +41,6 @@ version = { attr = "nott_your_timetable.__version__" }
 
 [tool.setuptools.package-data]
 "nott_your_timetable.data" = ["*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

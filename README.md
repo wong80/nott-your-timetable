@@ -20,6 +20,7 @@ Exports Timetable for University of Nottingham Malaysia Student.
             - [Outlook](#outlook)
             - [Google Calendar](#google-calendar)
         - [CLI](#cli)
+    - [Development](#development)
     - [TODO](#todo)
 
 <!-- markdown-toc end -->
@@ -145,12 +146,27 @@ To export the output to csv
 nott-your-timetable-cli -c "E & EE" "BEng Hons Electl & Electnc Eng/F/02 - H603 Electrical and Electronic Engineering" -f csv
 ```
 
+Dates are calculated from the start of week 1, which is read from the timetable itself. A warning is shown if the timetable is for a different academic year than today's (e.g. the university hasn't published the new one yet). To override the start of week 1, pass the Monday of week 1:
+
+```sh
+nott-your-timetable-cli -c "E & EE" "BEng Hons Electl & Electnc Eng/F/02 - H603 Electrical and Electronic Engineering" --week1 2026-09-07
+```
+
 There are more options available, to see all the options use the help argument.
 
 ```sh
 nott-your-timetable-cli -h
 ```
 
+
+## Development
+
+Install with the test dependencies and run the tests:
+
+```sh
+pip install -e ".[test]"
+pytest
+```
 
 ## TODO
   * [ ] Support for exporting to other formats
@@ -161,7 +177,8 @@ nott-your-timetable-cli -h
   * [x] Add more convinience option e.g. Schedule for Spring Semester
   * [x] A graphical frontend
   * [ ] Add GUI and TUI for displaying timetable
-  * [ ] Make use of [Calender Object](https://docs.python.org/3/library/calendar.html)
+  * [x] Make use of [Calender Object](https://docs.python.org/3/library/calendar.html)
+  * [x] Tests
   * [ ] Add Export Options
   * [x] Add better help descriptions
   * [ ] Support for mutiple program selection
